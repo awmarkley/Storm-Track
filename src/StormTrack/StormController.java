@@ -1,6 +1,11 @@
 package StormTrack;
 
-import java.util.List;
+import com.opencsv.CSVReader;
+
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * Created by Andrew Markley on 11/13/16.
@@ -9,6 +14,20 @@ public class StormController {
 
     private StormData data;
     private View view;
+
+    public static void main( String[] args ) throws IOException {
+        StormController stormControl = new StormController();
+
+        stormControl.loadFiles("Info/");
+
+        StormData sData = stormControl.getData();
+
+        //Objects are stored by year + stormID
+        Storm testStorm = sData.getStorm("194912090001");
+        //Zero is the first storm track entry to get
+        System.out.println(testStorm);
+        testStorm.getHistory().forEach( System.out::println );
+    }
 
     public StormController() {
         data = new StormData();
@@ -24,28 +43,54 @@ public class StormController {
     //TODO: Return the necessary information to the View object to display Storm paths.
     public void paths( List<Storm> storms) { return; }
 
-    //TODO: Recursively load all folders and files in target directory.
-    public void loadFolder( String folder ) { return; }
-
     //TODO: Add all storm data from a file to the Storm object and then add that Storm to StormData.
-    public void loadFile( String file ) {
+    public void loadFiles( String f ) throws IOException {
 
-        /**
-         * Each file corresponds to a storm, create a new storm for every file.
-         */
+        File folder = new File(f);
+        File[] yearFiles = folder.listFiles();
 
-        String name = "";
-        Storm s = new Storm(name);
+        for ( File year : yearFiles ) {
+            CSVReader reader = new CSVReader(new FileReader(year));
+            List<String[]> input = reader.readAll();
+            removeSpaces(input);
 
-        /**
-         * Add DatePosition for each line
-         */
+            //Organize storms by storm number
+            Map<String,List<String[]>> storms = new HashMap();
+            for ( String[] row : input ) {
+                String stormName = row[0];
 
-        data.addStorm(name, s);
+                if ( !storms.containsKey(stormName)) {
+                    List<String[]> value = new ArrayList<>();
+                    value.add(row);
+                    storms.put(row[0], value);
+                }
+                else {
+                    storms.get(row[0]).add(row);
+                }
+            }
 
-        return;
+            //Create a storm object for each key and add it to StormData object
+            for ( String key : storms.keySet() ) {
+                List<String[]> rows = storms.get(key);
+
+                String stormID =  rows.get(0)[1] + "" + key;
+                Storm storm = new Storm( stormID, rows);
+
+                data.addStorm(stormID, storm);
+            }
+        }
+    }
+
+    private static void removeSpaces(List<String[]> data) {
+        for (int i = 0; i < data.size(); i++) {
+            for (int j = 0; j < 4; j++) {
+                data.get(i)[j] = data.get(i)[j].replaceAll("\\s+", "");
+            }
+        }
+
     }
 
     //TODO: Design a format for input strings.
     public String loadString( String input ) { return null; }
+    public StormData getData() { return data; }
 }

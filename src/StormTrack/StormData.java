@@ -15,9 +15,9 @@ public class StormData {
         map = new HashMap<>();
     }
 
-    public void addStorm(String name, Storm storm) {
-        if ( !map.containsKey(name) )
-            map.put(name,storm);
+    public void addStorm(String stormID, Storm storm) {
+        if ( !map.containsKey(stormID) )
+            map.put(stormID,storm);
         //TODO: How to handle storms with the same name? Is this even an issue?
         else
             throw new UnsupportedOperationException("Cannot add two storms with the same name.");
