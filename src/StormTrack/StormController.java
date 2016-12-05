@@ -1,6 +1,8 @@
 package StormTrack;
 
 import com.opencsv.CSVReader;
+import javafx.application.Application;
+import javafx.stage.Stage;
 
 import java.io.File;
 import java.io.FileReader;
@@ -10,13 +12,16 @@ import java.util.*;
 /**
  * Created by Andrew Markley on 11/13/16.
  */
-public class StormController {
+public class StormController extends Application{
 
     private StormData data;
     private View view;
 
     public static void main( String[] args ) throws IOException {
         StormController stormControl = new StormController();
+
+        View display = new View();
+        Application.launch(View.class, args);
 
         stormControl.loadFiles("Info/");
 
@@ -32,6 +37,19 @@ public class StormController {
     public StormController() {
         data = new StormData();
         view = new View();
+
+        try {
+            loadFiles("Info/" );
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+    @Override
+    public void start(Stage primaryStage) throws Exception {
+
     }
 
     //TODO: Use View object to visualize a map.
@@ -43,7 +61,6 @@ public class StormController {
     //TODO: Return the necessary information to the View object to display Storm paths.
     public void paths( List<Storm> storms) { return; }
 
-    //TODO: Add all storm data from a file to the Storm object and then add that Storm to StormData.
     public void loadFiles( String f ) throws IOException {
 
         File folder = new File(f);
@@ -93,4 +110,6 @@ public class StormController {
     //TODO: Design a format for input strings.
     public String loadString( String input ) { return null; }
     public StormData getData() { return data; }
+    public Set<Integer> getYears() { return data.getYearList(); }
+    public Set<String> getStormIDs() { return data.getStormIDList(); }
 }
