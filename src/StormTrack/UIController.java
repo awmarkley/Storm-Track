@@ -4,20 +4,20 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.*;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
-import org.geotools.map.MapContent;
+import org.geotools.feature.SchemaException;
+import org.opengis.referencing.FactoryException;
 
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
+@SuppressWarnings("unchecked")
 public class UIController extends VBox{
-    private MapContent map;
-    private GraphicsContext gc;
-
 
     @FXML // ResourceBundle that was given to the FXMLLoader
     private ResourceBundle resources;
@@ -52,6 +52,12 @@ public class UIController extends VBox{
     @FXML // fx:id="canvas"
     private Canvas canvas;// Value injected by FXMLLoader
 
+    private final StormController stormController = new StormController();
+    private final ArrayList storms = new ArrayList(stormController.getStormIDs());
+    private final ObservableList masterStormIDList = FXCollections.observableArrayList(storms);
+    private final ArrayList years = new ArrayList(stormController.getYears());
+    private final MapCanvas map = new MapCanvas(1024, 768);
+
     @FXML // This method is called by the FXMLLoader when initialization is complete
     void initialize() {
         assert heatmap != null : "fx:id=\"heatmap\" was not injected: check your FXML file 'Window.fxml'.";
@@ -64,21 +70,29 @@ public class UIController extends VBox{
         assert info != null : "fx:id=\"info\" was not injected: check your FXML file 'Window.fxml'.";
         assert canvas != null : "fx:id=\"canvas\" was not injected: check your FXML file 'Window.fxml'.";
 
-        StormController stormC = new StormController();
-
-        ArrayList years = new ArrayList(stormC.getYears());
+        //Initial data setup/cleanup
         years.add(0,"All years");
-
-        ArrayList storms = new ArrayList(stormC.getStormIDs());
-        final ObservableList masterStormIDList = FXCollections.observableArrayList(storms);
         FXCollections.sort(masterStormIDList);
 
-        //Set up the initial map canvas
-        MapCanvas map = new MapCanvas(1024, 768);
-        canvas = (Canvas) map.getCanvas();
+        //Set up and assign the map canvas to the Borderpane's center.
+        Pane anchor = (Pane) canvas.getParent();
+        ( (BorderPane) anchor ).setCenter( map.getCanvas());
 
         //Populate the years in pulldown menu from the StormData set.
+        setupChoiceBox();
 
+        //Populate the storms in the listView from the StormData set.
+        listView.getItems().addAll(masterStormIDList);
+        listView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+
+        //Configure "Go" button behavior
+        setupGoButton();
+
+        //Configure "Storm Track" button behavior
+        setupStormTrackButton();
+    }
+
+    private void setupChoiceBox() {
         choicebox.getItems().addAll(FXCollections.observableArrayList(years));
         choicebox.getSelectionModel().selectFirst();
         choicebox.getSelectionModel().selectedIndexProperty()
@@ -97,10 +111,77 @@ public class UIController extends VBox{
                         listView.getItems().addAll(current);
                     }
                 });
+    }
 
-        //Populate the storms in the listView from the StormData set.
-        listView.getItems().addAll(masterStormIDList);
-        listView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+    private void setupGoButton() {
+        go.setDefaultButton(true);
+        go.setOnAction(e -> {
+            String latitudeData = latitude.getText();
+            String longitudeData = longitude.getText();
+
+            if ( latitudeData.isEmpty() && longitudeData.isEmpty())
+            {
+                try {
+                    map.resetView();
+                } catch (FactoryException e1) {
+                    e1.printStackTrace();
+                }
+            }
+            else if ( latitudeData.isEmpty())
+            {
+               popupWarning("Please provide a latitude value");
+            }
+            else if ( longitudeData.isEmpty()){
+                popupWarning("Please provide a longitude value");
+            }
+            else {
+                double latCoord;
+                double longCoord;
+                try {
+                    latCoord = Double.parseDouble(latitudeData);
+                    longCoord = Double.parseDouble(longitudeData);
+
+                    if ( latCoord > 180 )
+                        latCoord = 180;
+                    if ( latCoord < -180 )
+                        latCoord = -180;
+                    if ( longCoord > 90 )
+                        longCoord = 90;
+                    if ( longCoord < -90 )
+                        longCoord = 90;
+
+                    try {
+                        map.showArea(latCoord,longCoord);
+                    } catch (FactoryException e2) {
+                        e2.printStackTrace();
+                    }
+                }
+                catch (NumberFormatException e1) {
+                    popupWarning( "Invalid entry");
+                }
+
+            }
+        });
+    }
+
+    private void setupStormTrackButton() {
+        stormtrack.setOnAction( e -> {
+            try {
+                map.drawLine(null);
+            } catch (SchemaException e1) {
+                e1.printStackTrace();
+            }
+        });
+
+    }
+
+    private void popupWarning(String s) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Error");
+        alert.setHeaderText(null);
+        alert.setContentText( s );
+
+        alert.showAndWait();
     }
 
 }

@@ -1,5 +1,8 @@
 package StormTrack;
 
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.LineString;
 import javafx.application.Platform;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Task;
@@ -10,25 +13,38 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.util.Duration;
+import org.geotools.data.DataUtilities;
 import org.geotools.data.FileDataStore;
 import org.geotools.data.FileDataStoreFinder;
 import org.geotools.data.simple.SimpleFeatureSource;
+import org.geotools.feature.DefaultFeatureCollection;
+import org.geotools.feature.SchemaException;
+import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.geometry.DirectPosition2D;
+import org.geotools.geometry.jts.JTSFactoryFinder;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.map.FeatureLayer;
+import org.geotools.map.Layer;
 import org.geotools.map.MapContent;
+import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.geotools.renderer.lite.StreamingRenderer;
 import org.geotools.styling.SLD;
 import org.geotools.styling.Style;
 import org.jfree.fx.FXGraphics2D;
+import org.opengis.feature.simple.SimpleFeature;
+import org.opengis.feature.simple.SimpleFeatureType;
+import org.opengis.referencing.FactoryException;
 
 import java.awt.*;
 import java.io.IOException;
+import java.util.ArrayList;
 
 public class MapCanvas {
     private Canvas canvas;
     private MapContent map;
     private GraphicsContext gc;
+    private DefaultGeographicCRS coordSystem = DefaultGeographicCRS.WGS84;
+    private ArrayList<Layer> layerList;
 
     public MapCanvas(int width, int height) {
         canvas = new Canvas(width, height);
@@ -54,6 +70,8 @@ public class MapCanvas {
             FeatureLayer layer = new FeatureLayer(featureSource, style);
             map.addLayer(layer);
             map.getViewport().setScreenArea(new Rectangle((int) canvas.getWidth(), (int) canvas.getHeight()));
+            map.getViewport().setMatchingAspectRatio(true);
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -167,5 +185,55 @@ public class MapCanvas {
     protected void doSetDisplayArea(ReferencedEnvelope envelope) {
         map.getViewport().setBounds(envelope);
         repaint = true;
+    }
+
+    public void showArea( double lat, double longi) throws FactoryException {
+
+        ReferencedEnvelope envelope = new ReferencedEnvelope(
+                lat-30, lat+30, longi-15, longi+15,
+                coordSystem);
+
+        doSetDisplayArea(envelope);
+    }
+
+    public void resetView() throws FactoryException {
+        ReferencedEnvelope envelope = new ReferencedEnvelope(
+                -180, 180, -90, 90,
+                coordSystem);
+
+        doSetDisplayArea(envelope);
+    }
+
+    public void drawLine( Coordinate[] coords ) throws SchemaException {
+
+        layerList.forEach( layer -> map.removeLayer(layer));
+        layerList.clear();
+
+        Layer layer = getLineLayer( coords );
+
+        layerList.add(layer);
+        map.addLayer(layer);
+    }
+
+    public void drawLines() throws SchemaException {
+
+    }
+
+    private FeatureLayer getLineLayer( Coordinate[] coords ) throws SchemaException {
+        SimpleFeatureType TYPE =
+                DataUtilities.createType("test", "line", "the_geom:LineString");
+        GeometryFactory geometryFactory = JTSFactoryFinder.getGeometryFactory();
+
+        LineString line = geometryFactory.createLineString( coords );
+
+        SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder((SimpleFeatureType) TYPE);
+        featureBuilder.add(line);
+        SimpleFeature feature = featureBuilder.buildFeature("LineString");
+
+        DefaultFeatureCollection lineCollection = new DefaultFeatureCollection();
+        lineCollection.add(feature);
+
+        Style style = SLD.createLineStyle(Color.BLUE, 3);
+        return new FeatureLayer(lineCollection, style);
     }
 }
