@@ -5,26 +5,14 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.control.Button;
 import javafx.scene.control.*;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
-import org.geotools.data.FileDataStore;
-import org.geotools.data.FileDataStoreFinder;
-import org.geotools.data.simple.SimpleFeatureSource;
-import org.geotools.map.FeatureLayer;
 import org.geotools.map.MapContent;
-import org.geotools.styling.SLD;
-import org.geotools.styling.Style;
-import org.geotools.swing.data.JFileDataStoreChooser;
 
-import java.awt.*;
-import java.io.File;
-import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.ResourceBundle;
+import java.util.stream.Collectors;
 
 public class UIController extends VBox{
     private MapContent map;
@@ -62,7 +50,7 @@ public class UIController extends VBox{
     private TextArea info = new TextArea(); // Value injected by FXMLLoader
 
     @FXML // fx:id="canvas"
-    private Canvas canvas = new Canvas(); // Value injected by FXMLLoader
+    private Canvas canvas;// Value injected by FXMLLoader
 
     @FXML // This method is called by the FXMLLoader when initialization is complete
     void initialize() {
@@ -78,36 +66,41 @@ public class UIController extends VBox{
 
         StormController stormC = new StormController();
 
-        //Populate the years in pulldown menu from the StormData set.
         ArrayList years = new ArrayList(stormC.getYears());
         years.add(0,"All years");
+
+        ArrayList storms = new ArrayList(stormC.getStormIDs());
+        final ObservableList masterStormIDList = FXCollections.observableArrayList(storms);
+        FXCollections.sort(masterStormIDList);
+
+        //Set up the initial map canvas
+        MapCanvas map = new MapCanvas(1024, 768);
+        canvas = (Canvas) map.getCanvas();
+
+        //Populate the years in pulldown menu from the StormData set.
+
         choicebox.getItems().addAll(FXCollections.observableArrayList(years));
+        choicebox.getSelectionModel().selectFirst();
+        choicebox.getSelectionModel().selectedIndexProperty()
+                .addListener((ov, value, newValue) -> {
+                    listView.getItems().clear();
+
+                    if ( newValue.intValue() == 0 )
+                        listView.getItems().addAll(masterStormIDList);
+                    else {
+                        int listValue = (int) years.get(newValue.intValue());
+                        ArrayList currentStorms = (ArrayList) storms.stream().filter(
+                                line -> ((String) line).substring(0,4).equals(listValue + "") )
+                                .collect(Collectors.toList());
+                        ObservableList current = FXCollections.observableArrayList(currentStorms);
+                        FXCollections.sort(current);
+                        listView.getItems().addAll(current);
+                    }
+                });
 
         //Populate the storms in the listView from the StormData set.
-        ArrayList storms = new ArrayList(stormC.getStormIDs());
-
-        ObservableList stormIDList = FXCollections.observableArrayList(storms);
-        FXCollections.sort(stormIDList);
-        listView.getItems().addAll(stormIDList);
-    }
-
-    private void initMap() {
-        try {
-            File file = JFileDataStoreChooser.showOpenFile("shp", null);
-            FileDataStore store = FileDataStoreFinder
-                    .getDataStore(this.getClass().getClassLoader().getResource("countries.shp"));
-            SimpleFeatureSource featureSource = store.getFeatureSource();
-            map = new MapContent();
-            Style style = SLD.createSimpleStyle(featureSource.getSchema());
-            FeatureLayer layer = new FeatureLayer(featureSource, style);
-            map.addLayer(layer);
-            map.getViewport().setScreenArea(
-                    new Rectangle((int) canvas.getWidth(), (int) canvas.getHeight()));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-
+        listView.getItems().addAll(masterStormIDList);
+        listView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
     }
 
 }

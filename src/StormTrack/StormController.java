@@ -112,4 +112,5 @@ public class StormController extends Application{
     public StormData getData() { return data; }
     public Set<Integer> getYears() { return data.getYearList(); }
     public Set<String> getStormIDs() { return data.getStormIDList(); }
+    public List<Storm> getStormsInYear(int year) { return data.getYear(year); }
 }

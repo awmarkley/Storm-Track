@@ -83,6 +83,6 @@
       </TextArea>
    </bottom>
    <center>
-      <Canvas fx:id="canvas" height="421.0" width="814.0" BorderPane.alignment="CENTER_LEFT" />
+      <Canvas fx:id="canvas" height="410.0" width="816.0" />
    </center>
 </BorderPane>
