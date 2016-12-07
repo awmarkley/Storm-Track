@@ -1,5 +1,7 @@
 package StormTrack;
 
+import com.vividsolutions.jts.geom.Coordinate;
+
 import java.time.LocalDateTime;
 
 /**
@@ -47,6 +49,11 @@ class DatePosition implements Comparable<DatePosition>{
     public boolean isLongEast() { return longEast; }
     public double getLatitude() { return latitude; }
     public double getLongitude() { return longitude; }
+    public Coordinate asCoordinate() {
+        return new Coordinate(
+                longitude * ( isLongEast() ? 1 : -1),
+                latitude * ( isLatNorth() ? 1 : -1 ));
+    }
 
     @Override
     public int compareTo(DatePosition o) {
@@ -55,6 +62,6 @@ class DatePosition implements Comparable<DatePosition>{
 
     public String toString() {
         return date + " : " + latitude + ( isLatNorth() ? "N" : "S" )
-                + ", " + longitude + ( isLongEast() ? "E" : "W" );
+                + ", " + longitude + ( isLongEast() ? "E" : "W" ) + "\n";
     }
 }

@@ -109,8 +109,10 @@ public class StormController extends Application{
 
     //TODO: Design a format for input strings.
     public String loadString( String input ) { return null; }
+
     public StormData getData() { return data; }
     public Set<Integer> getYears() { return data.getYearList(); }
     public Set<String> getStormIDs() { return data.getStormIDList(); }
     public List<Storm> getStormsInYear(int year) { return data.getYear(year); }
+    public Storm getStormByID(String stormID) { return data.getStorm(stormID); }
 }

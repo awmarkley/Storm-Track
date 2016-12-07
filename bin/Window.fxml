@@ -76,7 +76,7 @@
          </BorderPane.margin></ListView>
    </left>
    <bottom>
-      <TextArea fx:id="info" editable="false" prefHeight="103.0" prefWidth="1000.0" wrapText="true" BorderPane.alignment="CENTER">
+      <TextArea fx:id="info" editable="false" prefHeight="103.0" prefWidth="1000.0" BorderPane.alignment="CENTER">
          <BorderPane.margin>
             <Insets left="300.0" right="300.0" />
          </BorderPane.margin>

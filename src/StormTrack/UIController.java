@@ -13,6 +13,7 @@ import org.opengis.referencing.FactoryException;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
@@ -38,13 +39,13 @@ public class UIController extends VBox{
     private TextField longitude = new TextField(); // Value injected by FXMLLoader
 
     @FXML // fx:id="choicebox"
-    private ChoiceBox<?> choicebox = new ChoiceBox<>(); // Value injected by FXMLLoader
+    private ChoiceBox<String> choicebox = new ChoiceBox<>(); // Value injected by FXMLLoader
 
     @FXML // fx:id="go"
     private Button go = new Button(); // Value injected by FXMLLoader
 
     @FXML // fx:id="listView"
-    private ListView<?> listView = new ListView<>(); // Value injected by FXMLLoader
+    private ListView<String> listView = new ListView<>(); // Value injected by FXMLLoader
 
     @FXML // fx:id="info"
     private TextArea info = new TextArea(); // Value injected by FXMLLoader
@@ -54,7 +55,7 @@ public class UIController extends VBox{
 
     private final StormController stormController = new StormController();
     private final ArrayList storms = new ArrayList(stormController.getStormIDs());
-    private final ObservableList masterStormIDList = FXCollections.observableArrayList(storms);
+    private final ObservableList<String> masterStormIDList = FXCollections.observableArrayList(storms);
     private final ArrayList years = new ArrayList(stormController.getYears());
     private final MapCanvas map = new MapCanvas(1024, 768);
 
@@ -90,6 +91,9 @@ public class UIController extends VBox{
 
         //Configure "Storm Track" button behavior
         setupStormTrackButton();
+
+        //Configure list view
+        setupListView();
     }
 
     private void setupChoiceBox() {
@@ -141,14 +145,14 @@ public class UIController extends VBox{
                     latCoord = Double.parseDouble(latitudeData);
                     longCoord = Double.parseDouble(longitudeData);
 
-                    if ( latCoord > 180 )
-                        latCoord = 180;
-                    if ( latCoord < -180 )
-                        latCoord = -180;
-                    if ( longCoord > 90 )
-                        longCoord = 90;
-                    if ( longCoord < -90 )
-                        longCoord = 90;
+                    if ( latCoord > 90 )
+                        latCoord = 90;
+                    if ( latCoord < -90 )
+                        latCoord = -90;
+                    if ( longCoord > 180 )
+                        longCoord = 180;
+                    if ( longCoord < -180 )
+                        longCoord = -180;
 
                     try {
                         map.showArea(latCoord,longCoord);
@@ -166,13 +170,38 @@ public class UIController extends VBox{
 
     private void setupStormTrackButton() {
         stormtrack.setOnAction( e -> {
+            ObservableList<String> selected = listView.getSelectionModel().getSelectedItems();
+            List<Storm> stormList = selected.stream()
+                    .map(stormController::getStormByID)
+                    .collect(Collectors.toList());
+
             try {
-                map.drawLine(null);
+                map.drawLines( stormList );
             } catch (SchemaException e1) {
                 e1.printStackTrace();
             }
-        });
 
+        });
+    }
+
+    private void setupListView() {
+        listView.getSelectionModel()
+                .selectedItemProperty()
+                .addListener((observable, oldValue, newValue) -> {
+            try {
+                Storm storm = stormController.getStormByID(newValue);
+                String data = storm + "\n"
+                        + storm.getHistory()
+                        .stream()
+                        .map(DatePosition::toString)
+                        .collect(Collectors.joining());
+
+                info.setText(data);
+            }
+            catch (NullPointerException e1) {
+                //Do nothing, multiple objects were selected.
+            }
+        });
     }
 
     private void popupWarning(String s) {
