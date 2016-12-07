@@ -38,6 +38,7 @@ import org.opengis.referencing.FactoryException;
 import java.awt.*;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class MapCanvas {
@@ -337,36 +338,68 @@ public class MapCanvas {
         map.getViewport().setMatchingAspectRatio(true);
     }
 
+    private int colorCounter = 0;
     public void drawLines( List<Storm> storms ) throws SchemaException {
 
         if ( !layerList.isEmpty() )
             layerList.forEach( layer -> map.removeLayer(layer));
 
         layerList.clear();
-        int colorCounter = 0;
+
         for ( Storm storm : storms ) {
 
             Coordinate[] coords = storm.getHistory().stream()
                     .map(DatePosition::asCoordinate).toArray(Coordinate[]::new);
 
-            Layer layer = null;
-            try {
-                layer = getLineLayer( coords, Color.decode(indexcolors[colorCounter++]));
-            } catch (SchemaException e) {
-                e.printStackTrace();
+            List<Integer> cutoff = new ArrayList<>();
+            for (int i = 1; i < coords.length; i++)
+                if ((coords[i - 1].x > 0 && coords[i].x < 0)
+                        || (coords[i - 1].x < 0 && coords[i].x > 0))
+                    cutoff.add(i);
+
+            if (cutoff.isEmpty()) {
+                addLineLayer(coords);
+                colorCounter++;
             }
+            else {
+                int previous = 0;
 
-            layerList.add(layer);
-            map.addLayer(layer);
+                for ( int position : cutoff ) {
+                    Coordinate[] coordSplit = Arrays.copyOfRange(coords,previous,position);
+                    previous = position;
 
-            if ( colorCounter > indexcolors.length-1 )
-                colorCounter = 0;
+                    if ( coordSplit.length > 1 )
+                        addLineLayer(coordSplit);
+                }
+
+
+                Coordinate[] finalCoordSplit = Arrays.copyOfRange(coords,previous,coords.length-1);
+
+                if ( finalCoordSplit.length > 1 )
+                    addLineLayer(finalCoordSplit);
+
+                colorCounter++;
+            }
         }
-
         repaint = true;
         drawMap(gc);
     }
 
+    private void addLineLayer( Coordinate[] coords ) {
+
+        if (colorCounter > indexcolors.length-1)
+            colorCounter = 0;
+
+        Layer layer = null;
+        try {
+            layer = getLineLayer(coords, Color.decode(indexcolors[colorCounter]));
+        } catch (SchemaException e) {
+            e.printStackTrace();
+        }
+
+        layerList.add(layer);
+        map.addLayer(layer);
+    }
 
     private FeatureLayer getLineLayer( Coordinate[] coords , Color color) throws SchemaException {
         SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
