@@ -10,7 +10,9 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import org.geotools.feature.SchemaException;
 import org.opengis.referencing.FactoryException;
+import org.opengis.referencing.operation.TransformException;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -94,6 +96,9 @@ public class UIController extends VBox{
 
         //Configure list view
         setupListView();
+
+        //Configure "Heat Map" button
+        setupHeatView();
     }
 
     private void setupChoiceBox() {
@@ -201,6 +206,28 @@ public class UIController extends VBox{
             catch (NullPointerException e1) {
                 //Do nothing, multiple objects were selected.
             }
+        });
+    }
+
+    private void setupHeatView() {
+        heatmap.setOnAction( e -> {
+            ObservableList<String> selected = listView.getSelectionModel().getSelectedItems();
+
+//            if ( selected.size() < 2) {
+            try {
+                map.generateHeatMap(stormController.getAllStorms());
+            } catch (TransformException e1) {
+                e1.printStackTrace();
+            } catch (SchemaException e1) {
+                e1.printStackTrace();
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            }
+//            }
+//            else {
+//
+//            }
+
         });
     }
 

@@ -13,6 +13,9 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.util.Duration;
+import org.geotools.coverage.CoverageFactoryFinder;
+import org.geotools.coverage.grid.GridCoverage2D;
+import org.geotools.coverage.grid.GridCoverageFactory;
 import org.geotools.data.FileDataStore;
 import org.geotools.data.FileDataStoreFinder;
 import org.geotools.data.simple.SimpleFeatureSource;
@@ -24,22 +27,30 @@ import org.geotools.geometry.DirectPosition2D;
 import org.geotools.geometry.jts.JTSFactoryFinder;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.map.FeatureLayer;
+import org.geotools.map.GridCoverageLayer;
 import org.geotools.map.Layer;
 import org.geotools.map.MapContent;
+import org.geotools.process.vector.HeatmapSurface;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.geotools.renderer.lite.StreamingRenderer;
-import org.geotools.styling.SLD;
-import org.geotools.styling.Style;
+import org.geotools.styling.*;
+import org.geotools.styling.builder.ColorMapBuilder;
+import org.geotools.styling.builder.PolygonSymbolizerBuilder;
+import org.geotools.styling.builder.RasterSymbolizerBuilder;
 import org.jfree.fx.FXGraphics2D;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.referencing.FactoryException;
+import org.opengis.referencing.operation.TransformException;
+import org.opengis.style.ContrastMethod;
 
 import java.awt.*;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import static org.geotools.swt.styling.SimpleStyleConfigurator.sf;
 
 public class MapCanvas {
     private Canvas canvas;
@@ -353,7 +364,7 @@ public class MapCanvas {
 
             List<Integer> cutoff = new ArrayList<>();
             for (int i = 1; i < coords.length; i++)
-                if ((coords[i - 1].x > 0 && coords[i].x < 0)
+                if (       (coords[i - 1].x > 0 && coords[i].x < 0)
                         || (coords[i - 1].x < 0 && coords[i].x > 0))
                     cutoff.add(i);
 
@@ -424,5 +435,104 @@ public class MapCanvas {
         Style style = SLD.createLineStyle( color , 2);
 
         return new FeatureLayer(lineCollection, style);
+    }
+
+    public void generateHeatMap( List<Storm> storms ) throws TransformException, SchemaException, IOException {
+
+        layerList.forEach( layer -> map.removeLayer(layer));
+        layerList.clear();
+
+        ReferencedEnvelope envelope = new ReferencedEnvelope(
+                -180, -160, -20, 0, coordSystem);
+        HeatmapSurface heatmap = new HeatmapSurface(
+                4, envelope, 40, 40);
+
+        for ( Storm storm: storms ) {
+            for ( DatePosition datePos : storm.getHistory() ) {
+                double x = datePos.getLongitude() * ( datePos.isLongEast() ? 1 : -1);
+                double y = datePos.getLatitude() * ( datePos.isLatNorth() ? 1 : -1);
+
+                try {
+                    if (envelope.contains(x,y))
+                        heatmap.addPoint(x, y, 10.0);
+                }
+                catch (ArrayIndexOutOfBoundsException e1 ) {
+                    System.out.println( datePos + "\n" + x + ", " + y );
+                    throw e1;
+                }
+            }
+        }
+
+        float [][] heatMapGrid = heatmap.computeSurface();
+        heatMapGrid = flipXY(heatMapGrid);
+
+        TextSymbolizer text = StyleFactoryFinder.createStyleFactory().createTextSymbolizer();
+        text.setFill(null);
+
+        GridCoverageFactory gcf = CoverageFactoryFinder.getGridCoverageFactory(null);
+        GridCoverage2D gridCov = gcf.create("Processing...", heatMapGrid, envelope );
+
+        RasterSymbolizerBuilder rsb = new RasterSymbolizerBuilder();
+        org.geotools.styling.RasterSymbolizer raster = StyleFactoryFinder.createStyleFactory()
+                .getDefaultRasterSymbolizer();
+        PolygonSymbolizerBuilder polygonSB = new PolygonSymbolizerBuilder();
+        PolygonSymbolizer polygonSymbolizer = polygonSB.build();
+        raster.setGeometry(polygonSymbolizer.getGeometry());
+
+        ColorMapBuilder colorMapBuilder = rsb.opacity(0.3).colorMap();
+        colorMapBuilder.type(ColorMap.TYPE_INTERVALS);
+
+        for( int i = 250; i > 0; i -= 25)
+            colorMapBuilder.entry()
+                    .quantity(i/250.0)
+                    .color( new Color(250-i,255,250-i))
+                    .opacity(.3);
+
+        ColorMap colorMap = colorMapBuilder.build();
+
+        Style style = SLD.createPolygonStyle(Color.BLUE, null, 0.0f);
+
+        raster.setColorMap(colorMap);
+
+        style.setDefaultSpecification(raster);
+        Style rasterStyle = createGreyscaleStyle(1);
+
+        GridCoverageLayer gcLayer = new GridCoverageLayer(gridCov, style, "Rasterlayer");
+
+        gcLayer.setVisible(true);
+        layerList.add( gcLayer );
+        map.addLayer( gcLayer );
+
+        doSetDisplayArea(gcLayer.getBounds());
+
+        repaint = true;
+        drawMap(gc);
+
+    }
+
+    private float[][] flipXY(float[][] grid) {
+        int xsize = grid.length;
+        int ysize = grid[0].length;
+
+        float[][] grid2 = new float[ysize][xsize];
+        for (int ix = 0; ix < xsize; ix++) {
+            for (int iy = 0; iy < ysize; iy++) {
+                int iy2 = ysize - iy - 1;
+                grid2[iy2][ix] = grid[ix][iy];
+            }
+        }
+        return grid2;
+    }
+
+    private Style createGreyscaleStyle(int band) {
+        ContrastEnhancement ce = sf.createContrastEnhancement();
+        ce.setMethod(ContrastMethod.NORMALIZE);
+        SelectedChannelType sct = sf.createSelectedChannelType(String.valueOf(band), ce);
+
+        RasterSymbolizer sym = sf.getDefaultRasterSymbolizer();
+        ChannelSelection sel = sf.channelSelection(sct);
+        sym.setChannelSelection(sel);
+
+        return SLD.wrapSymbolizers(sym);
     }
 }

@@ -43,7 +43,8 @@ public class StormData {
 
     //TODO: Need to decide on return type for heat map generation.
     //TODO: Need arguments for heat map generation - perhaps Lat/Long coordinates?
-    public Object getHeatMap() { return null; }
+    @SuppressWarnings("unchecked")
+    public ArrayList<Storm> getAllStorms() { return new ArrayList(stormIDMap.values()); }
 
 
 }
