@@ -59,7 +59,7 @@ public class UIController extends VBox{
     private final ArrayList storms = new ArrayList(stormController.getStormIDs());
     private final ObservableList<String> masterStormIDList = FXCollections.observableArrayList(storms);
     private final ArrayList years = new ArrayList(stormController.getYears());
-    private final MapCanvas map = new MapCanvas(1024, 768);
+    private final MapCanvas map = new MapCanvas(800, 600);
 
     @FXML // This method is called by the FXMLLoader when initialization is complete
     void initialize() {

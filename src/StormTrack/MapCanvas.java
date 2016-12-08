@@ -3,6 +3,7 @@ package StormTrack;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.Polygon;
 import javafx.application.Platform;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Task;
@@ -13,9 +14,6 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.util.Duration;
-import org.geotools.coverage.CoverageFactoryFinder;
-import org.geotools.coverage.grid.GridCoverage2D;
-import org.geotools.coverage.grid.GridCoverageFactory;
 import org.geotools.data.FileDataStore;
 import org.geotools.data.FileDataStoreFinder;
 import org.geotools.data.simple.SimpleFeatureSource;
@@ -27,16 +25,12 @@ import org.geotools.geometry.DirectPosition2D;
 import org.geotools.geometry.jts.JTSFactoryFinder;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.map.FeatureLayer;
-import org.geotools.map.GridCoverageLayer;
 import org.geotools.map.Layer;
 import org.geotools.map.MapContent;
 import org.geotools.process.vector.HeatmapSurface;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.geotools.renderer.lite.StreamingRenderer;
 import org.geotools.styling.*;
-import org.geotools.styling.builder.ColorMapBuilder;
-import org.geotools.styling.builder.PolygonSymbolizerBuilder;
-import org.geotools.styling.builder.RasterSymbolizerBuilder;
 import org.jfree.fx.FXGraphics2D;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
@@ -437,6 +431,31 @@ public class MapCanvas {
         return new FeatureLayer(lineCollection, style);
     }
 
+    private FeatureLayer getRectangleLayer( Coordinate[] coords, Color color, float intensity) throws SchemaException {
+        SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
+        typeBuilder.setName( "name" );
+        typeBuilder.setCRS(coordSystem);
+        typeBuilder.add( "Polygon", Polygon.class);
+
+        final SimpleFeatureType TYPE =
+                typeBuilder.buildFeatureType();
+
+        GeometryFactory geometryFactory = JTSFactoryFinder.getGeometryFactory();
+
+        com.vividsolutions.jts.geom.Polygon polygon = geometryFactory.createPolygon( coords );
+
+        SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(TYPE);
+        featureBuilder.add(polygon);
+        SimpleFeature feature = featureBuilder.buildFeature("Polygon");
+
+        DefaultFeatureCollection lineCollection = new DefaultFeatureCollection();
+        lineCollection.add(feature);
+
+        Style style = SLD.createPolygonStyle( color , color, intensity);
+
+        return new FeatureLayer(lineCollection, style);
+    }
+
     public void generateHeatMap( List<Storm> storms ) throws TransformException, SchemaException, IOException {
 
         layerList.forEach( layer -> map.removeLayer(layer));
@@ -445,7 +464,7 @@ public class MapCanvas {
         ReferencedEnvelope envelope = new ReferencedEnvelope(
                 -180, -160, -20, 0, coordSystem);
         HeatmapSurface heatmap = new HeatmapSurface(
-                4, envelope, 40, 40);
+                2, envelope, 40, 40);
 
         for ( Storm storm: storms ) {
             for ( DatePosition datePos : storm.getHistory() ) {
@@ -464,46 +483,35 @@ public class MapCanvas {
         }
 
         float [][] heatMapGrid = heatmap.computeSurface();
-        heatMapGrid = flipXY(heatMapGrid);
+        //heatMapGrid = flipXY(heatMapGrid);
 
-        TextSymbolizer text = StyleFactoryFinder.createStyleFactory().createTextSymbolizer();
-        text.setFill(null);
 
-        GridCoverageFactory gcf = CoverageFactoryFinder.getGridCoverageFactory(null);
-        GridCoverage2D gridCov = gcf.create("Processing...", heatMapGrid, envelope );
+        doSetDisplayArea(envelope);
 
-        RasterSymbolizerBuilder rsb = new RasterSymbolizerBuilder();
-        org.geotools.styling.RasterSymbolizer raster = StyleFactoryFinder.createStyleFactory()
-                .getDefaultRasterSymbolizer();
-        PolygonSymbolizerBuilder polygonSB = new PolygonSymbolizerBuilder();
-        PolygonSymbolizer polygonSymbolizer = polygonSB.build();
-        raster.setGeometry(polygonSymbolizer.getGeometry());
+        int xCounter = 0;
+        for ( double i = -180; i < -160; i += 0.5 ) {
 
-        ColorMapBuilder colorMapBuilder = rsb.opacity(0.3).colorMap();
-        colorMapBuilder.type(ColorMap.TYPE_INTERVALS);
+            int yCounter = 0;
+            for ( double j = -20; j < 0; j += 0.5) {
 
-        for( int i = 250; i > 0; i -= 25)
-            colorMapBuilder.entry()
-                    .quantity(i/250.0)
-                    .color( new Color(250-i,255,250-i))
-                    .opacity(.3);
+                Coordinate[] newCoords = {
+                        new Coordinate(i, j+0.5),  //Upper Left
+                        new Coordinate(i, j),  //Lower Left
+                        new Coordinate(i+0.5, j),    //Lower Right
+                        new Coordinate(i+0.5, j+0.5),    //Upper Right
+                        new Coordinate(i, j+0.5)   //Upper Left
+                };
+                FeatureLayer layer = getRectangleLayer(newCoords,
+                        Color.BLUE,
+                        heatMapGrid[xCounter][yCounter++]);
+                layerList.add(layer);
+                map.addLayer(layer);
 
-        ColorMap colorMap = colorMapBuilder.build();
+            }
+            xCounter++;
+        }
 
-        Style style = SLD.createPolygonStyle(Color.BLUE, null, 0.0f);
 
-        raster.setColorMap(colorMap);
-
-        style.setDefaultSpecification(raster);
-        Style rasterStyle = createGreyscaleStyle(1);
-
-        GridCoverageLayer gcLayer = new GridCoverageLayer(gridCov, style, "Rasterlayer");
-
-        gcLayer.setVisible(true);
-        layerList.add( gcLayer );
-        map.addLayer( gcLayer );
-
-        doSetDisplayArea(gcLayer.getBounds());
 
         repaint = true;
         drawMap(gc);
