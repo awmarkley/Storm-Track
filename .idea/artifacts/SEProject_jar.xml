@@ -8,7 +8,7 @@
         </element>
         <element id="module-output" name="SEProject" />
         <element id="dir-copy" path="$PROJECT_DIR$/resources" />
-        <element id="dir-copy" path="$PROJECT_DIR$/Info" />
+        <element id="dir-copy" path="$PROJECT_DIR$/resources/Info" />
       </element>
       <element id="file-copy" path="$PROJECT_DIR$/fxgraphics2d/jfreesvg-3.2.jar" />
       <element id="file-copy" path="$PROJECT_DIR$/fxgraphics2d/orsonpdf-1.7.jar" />
@@ -16,7 +16,6 @@
       <element id="file-copy" path="$PROJECT_DIR$/fxgraphics2d/fxgraphics2d-1.5.jar" />
       <element id="file-copy" path="$PROJECT_DIR$/fxgraphics2d/jfreechart-nofx-2.0-pre1.jar" />
       <element id="file-copy" path="$APPLICATION_HOME_DIR$/lib/groovy-all-2.4.6.jar" />
-      <element id="library" level="project" name="opencsv-3.8" />
       <element id="file-copy" path="$PROJECT_DIR$/geotools-16.0/jts-1.13.jar" />
       <element id="file-copy" path="$PROJECT_DIR$/geotools-16.0/ant-1.8.1.jar" />
       <element id="file-copy" path="$PROJECT_DIR$/geotools-16.0/cdm-4.6.6.jar" />

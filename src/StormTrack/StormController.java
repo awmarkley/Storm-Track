@@ -39,7 +39,7 @@ public class StormController extends Application{
         view = new View();
 
         try {
-            loadFiles("Info/" );
+            loadFiles("../resources/Info/" );
         } catch (IOException e) {
             e.printStackTrace();
         }

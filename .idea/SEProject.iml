@@ -11,28 +11,6 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="file://$MODULE_DIR$/geotools-16.0" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES>
-          <root url="file://$MODULE_DIR$/geotools-16.0" />
-        </SOURCES>
-        <jarDirectory url="file://$MODULE_DIR$/geotools-16.0" recursive="false" />
-        <jarDirectory url="file://$MODULE_DIR$/geotools-16.0" recursive="false" type="SOURCES" />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://$APPLICATION_HOME_DIR$/lib/groovy-all-2.4.6.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
     <orderEntry type="module-library" scope="TEST">
       <library name="JUnit5">
         <CLASSES>
@@ -43,16 +21,8 @@
         <SOURCES />
       </library>
     </orderEntry>
-    <orderEntry type="library" name="opencsv-3.8" level="project" />
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="file://$MODULE_DIR$/fxgraphics2d" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-        <jarDirectory url="file://$MODULE_DIR$/fxgraphics2d" recursive="false" />
-      </library>
-    </orderEntry>
+    <orderEntry type="library" exported="" name="fxgraphics2d" level="project" />
+    <orderEntry type="library" exported="" name="geotools-16" level="project" />
+    <orderEntry type="library" exported="" name="openCSV" level="project" />
   </component>
 </module>
