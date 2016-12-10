@@ -20,9 +20,6 @@ public class StormController extends Application{
     public static void main( String[] args ) throws IOException {
         StormController stormControl = new StormController();
 
-        View display = new View();
-        Application.launch(View.class, args);
-
         stormControl.loadFiles("Info/");
 
         StormData sData = stormControl.getData();
@@ -39,7 +36,7 @@ public class StormController extends Application{
         view = new View();
 
         try {
-            loadFiles("../resources/Info/" );
+            loadFiles("Info/" );
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -52,18 +49,9 @@ public class StormController extends Application{
 
     }
 
-    //TODO: Use View object to visualize a map.
-    public void generateMap() { return; }
-
-    //TODO: Use StormData's heatMap method to generate a heatMap for View to display.
-    public void heatMap() { return; }
-
-    //TODO: Return the necessary information to the View object to display Storm paths.
-    public void paths( List<Storm> storms) { return; }
-
     public void loadFiles( String f ) throws IOException {
 
-        File folder = new File(f);
+        File folder = new File(this.getClass().getClassLoader().getResource(f).getFile());
         File[] yearFiles = folder.listFiles();
 
         for ( File year : yearFiles ) {
@@ -72,7 +60,7 @@ public class StormController extends Application{
             removeSpaces(input);
 
             //Organize storms by storm number
-            Map<String,List<String[]>> storms = new HashMap();
+            Map<String,List<String[]>> storms = new HashMap<>();
             for ( String[] row : input ) {
                 String stormName = row[0];
 
@@ -104,13 +92,12 @@ public class StormController extends Application{
                 data.get(i)[j] = data.get(i)[j].replaceAll("\\s+", "");
             }
         }
-
     }
 
     //TODO: Design a format for input strings.
     public String loadString( String input ) { return null; }
 
-    public StormData getData() { return data; }
+    private StormData getData() { return data; }
     public Set<Integer> getYears() { return data.getYearList(); }
     public Set<String> getStormIDs() { return data.getStormIDList(); }
     public List<Storm> getStormsInYear(int year) { return data.getYear(year); }
