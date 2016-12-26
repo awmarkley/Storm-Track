@@ -32,17 +32,17 @@ public class StormData {
             yearMap.get(year).add(storm);
     }
 
-    public Storm getStorm(String name) { return stormIDMap.get(name); }
+    /**
+     * Returns a storm by its ID
+     * @param stormID
+     * @return
+     */
+    public Storm getStorm(String stormID) { return stormIDMap.get(stormID); }
     public List<Storm> getYear(int year ) { return yearMap.get(year); }
     public List<Storm> getYear(String year) { return yearMap.get(Integer.parseInt(year)); }
     public Set<Integer> getYearList() { return yearMap.keySet(); }
     public Set<String> getStormIDList() { return stormIDMap.keySet(); }
 
-    //TODO: Need to decide on return type for heat map generation.
-    public Object getPaths(List<Storm> storms) { return null; }
-
-    //TODO: Need to decide on return type for heat map generation.
-    //TODO: Need arguments for heat map generation - perhaps Lat/Long coordinates?
     @SuppressWarnings("unchecked")
     public ArrayList<Storm> getAllStorms() { return new ArrayList(stormIDMap.values()); }
 

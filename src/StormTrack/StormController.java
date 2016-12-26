@@ -1,8 +1,6 @@
 package StormTrack;
 
 import com.opencsv.CSVReader;
-import javafx.application.Application;
-import javafx.stage.Stage;
 
 import java.io.File;
 import java.io.FileReader;
@@ -12,45 +10,21 @@ import java.util.*;
 /**
  * Created by Andrew Markley on 11/13/16.
  */
-public class StormController extends Application{
+public class StormController {
 
     private StormData data;
-    private View view;
-
-    public static void main( String[] args ) throws IOException {
-        StormController stormControl = new StormController();
-
-        stormControl.loadFiles("Info/");
-
-        StormData sData = stormControl.getData();
-
-        //Objects are stored by year + stormID
-        Storm testStorm = sData.getStorm("194912090001");
-        //Zero is the first storm track entry to get
-        System.out.println(testStorm);
-        testStorm.getHistory().forEach( System.out::println );
-    }
 
     public StormController() {
         data = new StormData();
-        view = new View();
 
         try {
             loadFiles("Info/" );
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-
-    }
-
-    @Override
-    public void start(Stage primaryStage) throws Exception {
-
     }
 
     public void loadFiles( String f ) throws IOException {
-
         File folder = new File(this.getClass().getClassLoader().getResource(f).getFile());
         File[] yearFiles = folder.listFiles();
 

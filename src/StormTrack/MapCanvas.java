@@ -354,7 +354,7 @@ public class MapCanvas {
         for ( Storm storm : storms ) {
 
             Coordinate[] coords = storm.getHistory().stream()
-                    .map(DatePosition::asCoordinate).toArray(Coordinate[]::new);
+                    .map(DatePosition::getCoordinates).toArray(Coordinate[]::new);
 
             List<Integer> cutoff = new ArrayList<>();
             for (int i = 1; i < coords.length; i++)
@@ -451,7 +451,10 @@ public class MapCanvas {
         DefaultFeatureCollection lineCollection = new DefaultFeatureCollection();
         lineCollection.add(feature);
 
-        Style style = SLD.createPolygonStyle( color , color, intensity);
+        Color clear = new Color(255, 255, 255, 0);
+
+        Style style = SLD.createPolygonStyle( clear , color, intensity);
+
 
         return new FeatureLayer(lineCollection, style);
     }
@@ -461,15 +464,20 @@ public class MapCanvas {
         layerList.forEach( layer -> map.removeLayer(layer));
         layerList.clear();
 
+        int maxX = 180;
+        int minX = -180;
+        int maxY = 90;
+        int minY = -90;
+
         ReferencedEnvelope envelope = new ReferencedEnvelope(
-                -180, -160, -20, 0, coordSystem);
+                minX, maxX, minY, maxY, coordSystem);
         HeatmapSurface heatmap = new HeatmapSurface(
-                2, envelope, 40, 40);
+                2, envelope, 360, 180);
 
         for ( Storm storm: storms ) {
             for ( DatePosition datePos : storm.getHistory() ) {
-                double x = datePos.getLongitude() * ( datePos.isLongEast() ? 1 : -1);
-                double y = datePos.getLatitude() * ( datePos.isLatNorth() ? 1 : -1);
+                double x = datePos.getCoordinates().x;
+                double y = datePos.getCoordinates().y;
 
                 try {
                     if (envelope.contains(x,y))
@@ -483,29 +491,35 @@ public class MapCanvas {
         }
 
         float [][] heatMapGrid = heatmap.computeSurface();
-        //heatMapGrid = flipXY(heatMapGrid);
 
 
         doSetDisplayArea(envelope);
 
         int xCounter = 0;
-        for ( double i = -180; i < -160; i += 0.5 ) {
+        for ( double i = minX; i < maxX; i += 1 ) {
 
             int yCounter = 0;
-            for ( double j = -20; j < 0; j += 0.5) {
+            for ( double j = minY; j < maxY; j += 1) {
 
                 Coordinate[] newCoords = {
-                        new Coordinate(i, j+0.5),  //Upper Left
+                        new Coordinate(i, j+1),  //Upper Left
                         new Coordinate(i, j),  //Lower Left
-                        new Coordinate(i+0.5, j),    //Lower Right
-                        new Coordinate(i+0.5, j+0.5),    //Upper Right
-                        new Coordinate(i, j+0.5)   //Upper Left
+                        new Coordinate(i+1, j),    //Lower Right
+                        new Coordinate(i+1, j+1),    //Upper Right
+                        new Coordinate(i, j+1)   //Upper Left
                 };
-                FeatureLayer layer = getRectangleLayer(newCoords,
-                        Color.BLUE,
-                        heatMapGrid[xCounter][yCounter++]);
-                layerList.add(layer);
-                map.addLayer(layer);
+
+                float valueCheck = heatMapGrid[xCounter][yCounter++];
+
+                if ( valueCheck > 0 ) {
+                    FeatureLayer layer = getRectangleLayer(newCoords,
+                            Color.BLUE,
+                            valueCheck);
+
+
+                    layerList.add(layer);
+                    map.addLayer(layer);
+                }
 
             }
             xCounter++;

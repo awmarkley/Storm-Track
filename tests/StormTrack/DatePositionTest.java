@@ -5,8 +5,6 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 /**
  * Created by awmarkley on 12/3/16.
  */
@@ -30,30 +28,6 @@ class DatePositionTest {
     void getDate() {
         assert( northEast.getDate().equals(time1) );
         assert( southWest.getDate().equals(time2) );
-    }
-
-    @Test
-    void isLatNorth() {
-        assert( northEast.isLatNorth() );
-        assertFalse( southWest.isLatNorth() );
-    }
-
-    @Test
-    void isLongEast() {
-        assert( northEast.isLongEast() );
-        assertFalse( southWest.isLongEast() );
-    }
-
-    @Test
-    void getLatitude() {
-        assert( northEast.getLatitude() == 250 );
-        assert( southWest.getLatitude() == 150 );
-    }
-
-    @Test
-    void getLongitude() {
-        assert( northEast.getLongitude() == 100 );
-        assert( southWest.getLongitude() == 200 );
     }
 
     @Test
